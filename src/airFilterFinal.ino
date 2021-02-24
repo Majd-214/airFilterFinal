@@ -8,7 +8,7 @@ Adafruit_CCS811 ccs;
 //initialize temperature and humidity sensor
 #include <DHT.h>
 #define DHTPIN 2
-#define DHTTYPE DHT11
+#define DHTTYPE DHT22
 DHT dht(DHTPIN, DHTTYPE);
 
 //initialize OLED
@@ -88,27 +88,41 @@ void setup()
   while(!ccs.available());
 }
 
-//mian loop
-void loop() 
+//sounds alarm
+void alarm()
 {
-  //read gas sensor
-  if(ccs.available())
-  {
-    if(!ccs.readData())
-    {
-      gasMode();
-    }
-    else
-    {
-      while(1);
-    }
-  }  
-  //display temperature and humidity when button is pressed
-  if(digitalRead(buttonPin) == HIGH)
-  {
-      tempMode();
-  }
+  tone(buzzerPin, 1568, 500);
+  digitalWrite(ledRed, HIGH);
+  delay(250);
+  digitalWrite(ledRed, LOW);
+  delay(250);
+  digitalWrite(ledRed, HIGH);
+  delay(250);
+  digitalWrite(ledRed, LOW);
+  delay(250);
 }
+
+void fanOff()
+{
+  digitalWrite(switchPin, LOW);
+  analogWrite(fanPin, 0);
+}
+
+void fanOn(int speed)
+{
+  int range = map(speed, 1, 5, 0 ,255);
+  digitalWrite(switchPin, HIGH);
+  analogWrite(fanPin, range);
+}
+
+//clears LEDs
+void clearLed()
+{
+    digitalWrite(ledRed, LOW);
+    digitalWrite(ledGreen, LOW);
+    digitalWrite(ledBlue, LOW);
+}
+
 
 void gasMode()
 {
@@ -185,27 +199,6 @@ void gasMode()
         display.display();
   }
   
-//clears LEDs
-void clearLed()
-{
-    digitalWrite(ledRed, LOW);
-    digitalWrite(ledGreen, LOW);
-    digitalWrite(ledBlue, LOW);
-}
-
-//sounds alarm
-void alarm()
-{
-  tone(buzzerPin, 1568, 500);
-  digitalWrite(ledRed, HIGH);
-  delay(250);
-  digitalWrite(ledRed, LOW);
-  delay(250);
-  digitalWrite(ledRed, HIGH);
-  delay(250);
-  digitalWrite(ledRed, LOW);
-  delay(250);
-}
 
 //displays temp
 void tempMode()
@@ -235,15 +228,24 @@ void tempMode()
   delay(5000);
 }
 
-void fanOff()
+//mian loop
+void loop() 
 {
-  digitalWrite(switchPin, LOW);
-  analogWrite(fanPin, 0);
-}
-
-void fanOn(int speed)
-{
-  int range = map(speed, 1, 5, 0 ,255);
-  digitalWrite(switchPin, HIGH);
-  analogWrite(fanPin, range);
+  //read gas sensor
+  if(ccs.available())
+  {
+    if(!ccs.readData())
+    {
+      gasMode();
+    }
+    else
+    {
+      while(1);
+    }
+  }  
+  //display temperature and humidity when button is pressed
+  if(digitalRead(buttonPin) == HIGH)
+  {
+      tempMode();
+  }
 }
