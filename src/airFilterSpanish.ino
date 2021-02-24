@@ -72,8 +72,8 @@ void setup()
   display.clearDisplay();
   display.setTextColor(WHITE);
   display.setTextSize(2);
-  display.setCursor(25,15);
-  display.print("Loading");
+  display.setCursor(20,15);
+  display.print("Cargando");
   display.setCursor(48,35);
   display.print("...");
   display.display();
@@ -82,7 +82,7 @@ void setup()
 
   if(!ccs.begin())
   {
-    display.print("Fatal error!");
+    display.print("Error Fatal!");
     while(1);
   }
   
@@ -133,7 +133,7 @@ void gasMode()
       
       if(TVOC < 330)
       {
-          airQuality = "Great";
+          airQuality = "Genial";
           clearLed();
           digitalWrite(ledGreen, HIGH);
           fanOff();
@@ -141,7 +141,7 @@ void gasMode()
       
       else if(TVOC >= 330 && TVOC < 660)
       {
-          airQuality = "Good";
+          airQuality = "Buena";
           clearLed();
           digitalWrite(ledGreen, HIGH);
           digitalWrite(ledBlue, HIGH);
@@ -150,7 +150,7 @@ void gasMode()
       
       else if(TVOC >= 660 && TVOC < 1000)
       {
-          airQuality = "Decent";
+          airQuality = "Decente";
           clearLed();
           digitalWrite(ledRed, HIGH);
           digitalWrite(ledGreen, HIGH);
@@ -160,7 +160,7 @@ void gasMode()
 
       else if(TVOC >= 1000 && TVOC < 1330)
       {
-          airQuality = "Poor";
+          airQuality = "Mala";
           clearLed();
           digitalWrite(ledGreen, HIGH);
           digitalWrite(ledRed, HIGH);
@@ -169,7 +169,7 @@ void gasMode()
 
       else if(TVOC >= 1330 && TVOC < 1800)
       {
-          airQuality = "Warning";
+          airQuality = "Alarma";
           clearLed();
           digitalWrite(ledRed, HIGH);
           digitalWrite(ledBlue, HIGH);
@@ -178,7 +178,7 @@ void gasMode()
 
       else if(TVOC >= 2000)
       {
-          airQuality = "DANGER!";
+          airQuality = "PELIGRO!";
           clearLed();
           digitalWrite(ledRed, HIGH);
           fanOn(5);
@@ -191,10 +191,10 @@ void gasMode()
         display.print("CO2:");
         display.print(CO2);
         display.setCursor(64,0);
-        display.print("VOC:");
+        display.print("COV:");
         display.print(TVOC);
         display.setCursor(0,20);
-        display.print("Air Quality: ");
+        display.print("Calidad del aire:");
         display.setTextSize(3);
         display.setCursor(0,30);
         display.print(airQuality);
@@ -207,25 +207,25 @@ void tempMode()
 {
   int h = dht.readHumidity();
   // Read temperature as Celsius (the default)
-  int t = dht.readTemperature();
+  //int t = dht.readTemperature();
   // Read temperature as Fahrenheit (isFahrenheit = true)
-  //int f = dht.readTemperature(true);
+  int f = dht.readTemperature(true);
 
   display.clearDisplay();
   display.setTextColor(WHITE);
   display.setTextSize(2);
   display.setCursor(5,15);
-  display.print("Humid:");
+  display.print("Humed:");
   display.print(h);
   display.print("%");
   display.setCursor(5,35);
   display.print("Temp:");
-  display.print(t);
+  /*display.print(t);
   display.print((char)247);
-  display.print("C");
-  /*display.print(f);
+  display.print("C");*/
+  display.print(f);
   display.print((char)247);
-  display.print("F");*/
+  display.print("F");
   display.display();
   delay(5000);
 }
