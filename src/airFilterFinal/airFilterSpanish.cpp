@@ -3,8 +3,6 @@
 #include <LED.h>
 
 //initialize CCS811 CO2 and Toxic gas sensor
-#include "Adafruit_CCS811.h"
-Adafruit_CCS811 ccs;
 
 //initialize temperature and humidity sensor
 #include <DHT.h>
@@ -17,7 +15,7 @@ DHT dht(DHTPIN, DHTTYPE);
 #include <Adafruit_SSD1306.h>
 #define SCREEN_WIDTH 128    // OLED display width, in pixels
 #define SCREEN_HEIGHT 64    // OLED display height, in pixels
-#define SCREEN_ADDRESS 0x3C ///< See datasheet for Address; 0x3D for 128x64, 0x3C for 128x32
+#define SCREEN_ADDRESS 0x3C // See datasheet for Address; 0x3D for 128x64, 0x3C for 128x32
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire);
 
 //initialize buzzer pin
@@ -44,6 +42,13 @@ bool mute = false;
 
 void setup()
 {
+  //set MOSFET pin to output
+  pinMode(switchPin, OUTPUT);
+  digitalWrite(switchPin, LOW);
+
+  //Setup LED
+  led.Setup(5,4,3,true);
+  
   //Initialize Serial Communication
   Serial.begin(9600);
 
@@ -62,6 +67,8 @@ void setup()
   //set fan pin to output
   pinMode(fanPin, OUTPUT);
 
+  pinMode(A0, INPUT);
+
   //set MOSFET pin to output
   pinMode(switchPin, OUTPUT);
   digitalWrite(switchPin, LOW);
@@ -78,15 +85,6 @@ void setup()
   display.display();
   delay(2000);
   display.clearDisplay();
-
-  if (!ccs.begin())
-  { 
-    Serial.print("Error Fatal!");
-    while (1);
-  }
-
-  //wait for CCS811 sensor to be ready
-  while (!ccs.available());
 }
 
 //sounds alarm
@@ -94,6 +92,7 @@ void alarm()
 {
   if(mute == false){
     tone(buzzerPin, 1568, 500);
+    delay(250);
   }
   led.Flash('R', 250);
 }
@@ -101,78 +100,82 @@ void alarm()
 //controls fan
 void fan(int speed)
 {
-  int range = map(speed, 1, 5, 0, 255);
+  int range = map(speed, 0, 5, 0, 255);
   digitalWrite(switchPin, HIGH);
   analogWrite(fanPin, range);
-  if(speed == 0)
-  {
-    digitalWrite(switchPin, LOW);
-    analogWrite(fanPin, 0);
-  }
 }
 
-void gasMode()
+void gasMode(bool disp)
 {
-  int CO2 = ccs.geteCO2();
-  int TVOC = ccs.getTVOC();
+  //When using 5V pot value 0-1023, 3.3V pot value 0-640
+  int TVOC = map(analogRead(A0), 0, 1023, 0, 2250);
   if (TVOC < 330)
-  {
-    airQuality = "Genial";
-    led.Color('G');
-    fan(0);
-  }
+    {
+      airQuality = "Genial";
+      led.Color('G');
+      fan(0);
+    }
 
-  else if (TVOC >= 330 && TVOC < 660)
-  {
-    airQuality = "Buena";
-    led.Color('C');
-    fan(1);
-  }
+    else if (TVOC >= 330 && TVOC < 660)
+    {
+      airQuality = "Buena";
+      led.Color('C');
+      fan(1);
+    }
 
-  else if (TVOC >= 660 && TVOC < 1000)
-  {
-    airQuality = "Decente";
-    led.Color('W');
-    fan(2);
-  }
+    else if (TVOC >= 660 && TVOC < 1000)
+    {
+      airQuality = "Decente";
+      led.Color('W');
+      fan(2);
+    }
 
-  else if (TVOC >= 1000 && TVOC < 1330)
-  {
-    airQuality = "Mala";
-    led.Color('Y');
-    fan(3);
-  }
+    else if (TVOC >= 1000 && TVOC < 1330)
+    {
+      airQuality = "Mala";
+      led.Color('Y');
+      fan(3);
+    }
 
-  else if (TVOC >= 1330 && TVOC < 1800)
-  {
-    airQuality = "Alarma";
-    led.Color('M');
-    fan(4);
-  }
+    else if (TVOC >= 1330 && TVOC < 1800)
+    {
+      airQuality = "Alarma";
+      led.Color('M');
+      fan(4);
+    }
 
-  else if (TVOC >= 2000)
-  {
-    airQuality = "PELIGRO!";
-    led.Color('R');
-    fan(5);
-    alarm();
-  }
+    else if (TVOC >= 2000)
+    {
+      airQuality = "PELIGRO!";
+      led.Color('R');
+      fan(5);
+      alarm();
+    }
 
-  display.clearDisplay();
-  display.setTextColor(WHITE);
-  display.setTextSize(1);
-  display.setCursor(0, 0);
-  display.print("CO2:");
-  display.print(CO2);
-  display.setCursor(64, 0);
-  display.print("COV:");
-  display.print(TVOC);
-  display.setCursor(0, 20);
-  display.print("Calidad del aire:");
-  display.setTextSize(3);
-  display.setCursor(0, 30);
-  display.print(airQuality);
-  display.display(); 
+    if(disp == true)
+    {
+      display.clearDisplay();
+      display.setTextColor(WHITE);
+      display.setTextSize(1);
+      display.setCursor(0, 12);
+      display.print("CO2:");
+      display.print(TVOC);
+      display.setCursor(64, 12);
+      display.print("COV:");
+      display.print(TVOC);
+      display.setCursor(0, 30);
+      display.print("Calidad del aire:");
+      display.setTextSize(3);
+      display.setCursor(0, 40);
+      display.print(airQuality);
+      if(mute == true)
+      {
+        display.setTextSize(1);
+        display.setCursor(0, 1);
+        display.print("------Silenciada------");
+      }
+      display.display();
+    }
 }
 
 //displays temp
@@ -188,11 +191,7 @@ void tempMode()
   display.clearDisplay();
   display.setTextColor(WHITE);
   display.setTextSize(2);
-  display.setCursor(5, 15);
-  display.print("Humid:");
-  display.print(h);
-  display.print("%");
-  display.setCursor(5, 35);
+  display.setCursor(7, 17);
   display.print("Temp:");
 
   if(farenheit == false)
@@ -208,8 +207,19 @@ void tempMode()
     display.print('F');
   }
 
+  display.setCursor(7, 37);
+  display.print("Humed:");
+  display.print(h);
+  display.print("%");
+  
+  if(mute == true)
+  {
+    display.setTextSize(1);
+    display.setCursor(5, 1);
+    display.print("-----Silenciada-----");
+  }
+
   display.display();
-  delay(5000);
 }
 
 //mian loop
@@ -218,29 +228,21 @@ void loop()
   int input = Serial.read();
   switch(input)
   {
-    case 'C': farenheit = false; break;
-    case 'F': farenheit = true; break;
-    case 'M': mute = true; break;
-    case 'B': mute = false; break;
+    case 'C': if(farenheit == false){farenheit = true;}else if(farenheit == true){farenheit = false;}; break;
+    case 'M': if(mute == false){mute = true;}else if(mute == true){mute = false;}; break;
   }
-
   
-
-  //read gas sensor
-  if (ccs.available())
-  {
-    if (!ccs.readData())
-    {
-      gasMode();
-    }
-    else
-    {
-      while (1);
-    }
-  }
-  //display temperature and humidity when button is pressed
+  //reads gas sensor when button is pressed
   if (digitalRead(buttonPin) == HIGH)
   {
-    tempMode();
+    
+    for(int i = 0; i < 50; i++)
+    {
+      gasMode(true);
+      delay(200);
+    }
   }
+  
+  tempMode();
+  gasMode(false);
 }
